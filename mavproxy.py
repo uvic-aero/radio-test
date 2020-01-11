@@ -6,7 +6,7 @@ Copyright Andrew Tridgell 2011
 Released under the GNU GPL version 3 or later
 
 '''
-
+import RPi.GPIO as GPIO
 import sys, os, time, socket, signal
 import fnmatch, errno, threading
 import serial, select
@@ -67,8 +67,48 @@ except Exception as e:
 if __name__ == '__main__':
       multiproc.freeze_support()
 
+def clean_up(motors = []):
+    for motor in motors:
+        motor.set_power(0)
+    GPIO.cleanup()
+    print("cleaned gpio")
+
+class  Motor:
+    def __init__(self, pwm_pin, a1_pin, a2_pin):
+        GPIO.setup(pwm_pin, GPIO.OUT)
+        GPIO.setup(a1_pin, GPIO.OUT)
+        GPIO.setup(a2_pin, GPIO.OUT)
+        self.pwm = GPIO.PWM(pwm_pin, 20000)
+        self.pwm.start(0)
+        self.a1 = a1_pin
+        self.a2 = a2_pin
+    def set_power (self, speed):
+        if speed < 0:
+                self.reverse(-speed)
+        else:
+                self.forward(speed)
+
+    def forward (self, speed):
+        if speed > 100:
+                print("Max speed is 100", file=sys.stderr)
+                speed = 100
+        GPIO.output(self.a1, GPIO.LOW)
+        GPIO.output(self.a2, GPIO.HIGH)
+        self.pwm.ChangeDutyCycle(int(speed))
+    def reverse(self, speed):
+        if speed > 100:
+                print("Max speed is 100", file=sys.stderr)
+                speed = 100
+        GPIO.output(self.a1, GPIO.HIGH)
+        GPIO.output(self.a2, GPIO.LOW)
+        self.pwm.ChangeDutyCycle(int(speed))
+
+
 #The MAVLink version being used (None, "1.0", "2.0")
 mavversion = None
+GPIO.setmode(GPIO.BCM)
+driveR = Motor(21, 20, 16)
+driveL = Motor(26, 19, 13)
 
 class MPStatus(object):
     '''hold status information about the mavproxy'''
@@ -707,12 +747,11 @@ def process_master(m):
                 
                 msg_dict = msg.to_dict()
                 if "chan1_raw" in msg_dict:
-                    controls = {
-                                'ly': msg_dict["chan2_raw"],
-                                'ry': msg_dict["chan1_raw"],
-                            }
-
-                    pprint.pprint(controls)
+                    ly = (msg_dict["chan2_raw"] - 1500) // 4.1
+                    ry = (msg_dict["chan1_raw"] - 1500) // 4.1
+                    print(ly, ry)
+                    driveR.set_power(ry)
+                    driveL.set_power(ly)
             
             if msg.get_type() == "BAD_DATA":
                 if opts.show_errors:
@@ -1366,6 +1405,7 @@ if __name__ == '__main__':
             else:
                 input_loop()
         except KeyboardInterrupt:
+            clean_up([driveR, driveL])
             if mpstate.settings.requireexit:
                 print("Interrupt caught.  Use 'exit' to quit MAVProxy.")
 

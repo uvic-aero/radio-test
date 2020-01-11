@@ -1,2 +1,3 @@
 import serial
+import numpy
 

@@ -64,7 +64,6 @@ except Exception as e:
     pass
 
 if __name__ == '__main__':
-      print("inside")
       multiproc.freeze_support()
 
 #The MAVLink version being used (None, "1.0", "2.0")
@@ -704,6 +703,11 @@ def process_master(m):
                   continue
             if getattr(m, '_timestamp', None) is None:
                 m.post_message(msg)
+                
+                msg_dict = msg.to_dict()
+                if "chan1_raw" in msg_dict:
+                    print(msg.to_dict()["chan1_raw"])
+            
             if msg.get_type() == "BAD_DATA":
                 if opts.show_errors:
                     mpstate.console.writeln("MAV error: %s" % msg)
@@ -936,7 +940,7 @@ def main_loop():
     while True:
         if mpstate is None or mpstate.status.exit:
             return
-
+    #    print(mpstate.status.msg_count)
         # enable or disable screensaver:
         if (mpstate.settings.inhibit_screensaver_when_armed and
             screensaver_interface is not None):

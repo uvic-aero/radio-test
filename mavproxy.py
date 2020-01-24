@@ -12,7 +12,6 @@ import fnmatch, errno, threading
 import serial, select
 import traceback
 import select
-import shlex
 import math
 import platform
 import json
@@ -179,17 +178,9 @@ def say(text, priority='important'):
     '''text and/or speech output'''
     mpstate.functions.say(text, priority)
 
-def add_input(cmd, immediate=False):
-    '''add some command input to be processed'''
-    if immediate:
-        process_stdin(cmd)
-    else:
-        mpstate.input_queue.put(cmd)
-
 class MAVFunctions(object):
     '''core functions available in modules'''
     def __init__(self):
-        self.process_stdin = add_input
         self.param_set = param_set
         self.get_mav_param = get_mav_param
         self.say = say_text
@@ -620,87 +611,6 @@ command_map = {
     'alias'   : (cmd_alias,    'command aliases')
     }
 
-def shlex_quotes(value):
-    '''see http://stackoverflow.com/questions/6868382/python-shlex-split-ignore-single-quotes'''
-    lex = shlex.shlex(value)
-    lex.quotes = '"'
-    lex.whitespace_split = True
-    lex.commenters = ''
-    return list(lex)
-
-def process_stdin(line):
-    '''handle commands from user'''
-    if line is None:
-        sys.exit(0)
-
-    # allow for modules to override input handling
-    if mpstate.functions.input_handler is not None:
-          mpstate.functions.input_handler(line)
-          return
-
-    line = line.strip()
-
-    if mpstate.status.setup_mode:
-        # in setup mode we send strings straight to the master
-        if line == '.':
-            mpstate.status.setup_mode = False
-            mpstate.status.flightmode = "MAV"
-            mpstate.rl.set_prompt("MAV> ")
-            return
-        if line != '+++':
-            line += '\r'
-        for c in line:
-            time.sleep(0.01)
-            if sys.version_info.major >= 3:
-                mpstate.master().write(bytes(c, "ascii"))
-            else:
-                mpstate.master().write(c)
-        return
-
-    if not line:
-        return
-
-    try:
-        args = shlex_quotes(line)
-    except Exception as e:
-        print("Caught shlex exception: %s" % e.message);
-        return
-
-    cmd = args[0]
-    while cmd in mpstate.aliases:
-        line = mpstate.aliases[cmd]
-        args = shlex.split(line) + args[1:]
-        cmd = args[0]
-
-    if cmd == 'help':
-        k = command_map.keys()
-        k = sorted(k)
-        for cmd in k:
-            (fn, help) = command_map[cmd]
-            print("%-15s : %s" % (cmd, help))
-        return
-    if cmd == 'exit' and mpstate.settings.requireexit:
-        mpstate.status.exit = True
-        return
-
-    if not cmd in command_map:
-        for (m,pm) in mpstate.modules:
-            if hasattr(m, 'unknown_command'):
-                try:
-                    if m.unknown_command(args):
-                        return
-                except Exception as e:
-                    print("ERROR in command: %s" % str(e))
-        print("Unknown command '%s'" % line)
-        return
-    (fn, help) = command_map[cmd]
-    try:
-        fn(args[1:])
-    except Exception as e:
-        print("ERROR in command %s: %s" % (args[1:], str(e)))
-        if mpstate.settings.moddebug > 1:
-            traceback.print_exc()
-
 
 def process_master(m):
     '''process packets from the MAVLink master'''
@@ -757,8 +667,6 @@ def process_master(m):
                 if opts.show_errors:
                     mpstate.console.writeln("MAV error: %s" % msg)
                 mpstate.status.mav_error += 1
-
-
 
 def process_mavlink(slave):
     '''process packets from MAVLink slaves, forwarding to the master'''
@@ -998,14 +906,6 @@ def main_loop():
                 screensaver_interface.UnInhibit(screensaver_cookie)
                 screensaver_cookie = None
 
-        while not mpstate.input_queue.empty():
-            line = mpstate.input_queue.get()
-            mpstate.input_count += 1
-            cmds = line.split(';')
-            if len(cmds) == 1 and cmds[0] == "":
-                  mpstate.empty_input_count += 1
-            for c in cmds:
-                process_stdin(c)
 
         for master in mpstate.mav_master:
             if master.fd is None:
@@ -1086,33 +986,6 @@ def input_loop():
             mpstate.status.exit = True
             sys.exit(1)
         mpstate.input_queue.put(line)
-
-
-def run_script(scriptfile):
-    '''run a script file'''
-    try:
-        f = open(scriptfile, mode='r')
-    except Exception:
-        return
-    mpstate.console.writeln("Running script %s" % scriptfile)
-    sub = mp_substitute.MAVSubstitute()
-    for line in f:
-        line = line.strip()
-        if line == "" or line.startswith('#'):
-            continue
-        try:
-            line = sub.substitute(line, os.environ)
-        except mp_substitute.MAVSubstituteError as ex:
-            print("Bad variable: %s" % str(ex))
-            if mpstate.settings.script_fatal:
-                sys.exit(1)
-            continue
-        if line.startswith('@'):
-            line = line[1:]
-        else:
-            mpstate.console.writeln("-> %s" % line)
-        process_stdin(line)
-    f.close()
     
 def set_mav_version(mav10, mav20, autoProtocol, mavversionArg):
     '''Set the Mavlink version based on commandline options'''
@@ -1338,22 +1211,11 @@ if __name__ == '__main__':
     # call this early so that logdir is setup based on --aircraft
     (mpstate.status.logdir, logpath_telem, logpath_telem_raw) = log_paths()
 
-    for module in opts.load_module:
-        modlist = module.split(',')
-        for mod in modlist:
-            process_stdin('module load %s' % (mod))
-
     if not opts.setup:
         # some core functionality is in modules
         standard_modules = opts.default_modules.split(',')
         for m in standard_modules:
             load_module(m, quiet=True)
-
-    if opts.console:
-        process_stdin('module load console')
-
-    if opts.map:
-        process_stdin('module load map')
 
     start_scripts = []
     if 'HOME' in os.environ and not opts.setup:
@@ -1377,12 +1239,6 @@ if __name__ == '__main__':
             run_script(start_script)
         else:
             print("no script %s" % start_script)
-
-    if opts.cmd is not None:
-        for cstr in opts.cmd:
-            cmds = cstr.split(';')
-            for c in cmds:
-                process_stdin(c)
 
     if opts.profile:
         import yappi    # We do the import here so that we won't barf if run normally and yappi not available

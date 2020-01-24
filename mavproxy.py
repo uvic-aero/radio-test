@@ -140,35 +140,35 @@ class MPStatus(object):
         self.last_seq = 0
         self.armed = False
 
-    def show(self, f, pattern=None, verbose=False):
-        '''write status to status.txt'''
-        if pattern is None:
-            f.write('Counters: ')
-            for c in self.counters:
-                f.write('%s:%s ' % (c, self.counters[c]))
-            f.write('\n')
-            f.write('MAV Errors: %u\n' % self.mav_error)
-            f.write(str(self.gps)+'\n')
-        for m in sorted(self.msgs.keys()):
-            if pattern is not None and not fnmatch.fnmatch(str(m).upper(), pattern.upper()):
-                continue
-            if verbose:
-                try:
-                    mavutil.dump_message_verbose(f, self.msgs[m])
-                    f.write("\n")
-                except AttributeError as e:
-                    if "has no attribute 'dump_message_verbose'" in str(e):
-                        print("pymavlink update required for --verbose")
-                    else:
-                        raise e
-            else:
-                f.write("%u: %s\n" % (self.msg_count[m], str(self.msgs[m])))
-
-    def write(self):
-        '''write status to status.txt'''
-        f = open('status.txt', mode='w')
-        self.show(f)
-        f.close()
+    #def show(self, f, pattern=None, verbose=False):
+    #    '''write status to status.txt'''
+    #    if pattern is None:
+    #        f.write('Counters: ')
+    #        for c in self.counters:
+    #            f.write('%s:%s ' % (c, self.counters[c]))
+    #        f.write('\n')
+    #        f.write('MAV Errors: %u\n' % self.mav_error)
+    #        f.write(str(self.gps)+'\n')
+    #    for m in sorted(self.msgs.keys()):
+    #        if pattern is not None and not fnmatch.fnmatch(str(m).upper(), pattern.upper()):
+    #            continue
+    #        if verbose:
+    #            try:
+    #                mavutil.dump_message_verbose(f, self.msgs[m])
+    #                f.write("\n")
+    #            except AttributeError as e:
+    #                if "has no attribute 'dump_message_verbose'" in str(e):
+    #                    print("pymavlink update required for --verbose")
+    #                else:
+    #                    raise e
+    #        else:
+    #            f.write("%u: %s\n" % (self.msg_count[m], str(self.msgs[m])))
+#
+    #def write(self):
+    #    '''write status to status.txt'''
+    #    f = open('status.txt', mode='w')
+    #    self.show(f)
+    #    f.close()
 
 def say_text(text, priority='important'):
     '''text output - default function for say()'''

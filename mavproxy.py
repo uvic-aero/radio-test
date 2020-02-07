@@ -599,17 +599,17 @@ def import_package(name):
     return mod
 
 
-command_map = {
-    'script'  : (cmd_script,   'run a script of MAVProxy commands'),
-    'setup'   : (cmd_setup,    'go into setup mode'),
-    'reset'   : (cmd_reset,    'reopen the connection to the MAVLink master'),
-    'click'   : (cmd_click,    'set click location'),
-    'status'  : (cmd_status,   'show status'),
-    'set'     : (cmd_set,      'mavproxy settings'),
-    'watch'   : (cmd_watch,    'watch a MAVLink pattern'),
-    'module'  : (cmd_module,   'module commands'),
-    'alias'   : (cmd_alias,    'command aliases')
-    }
+# command_map = {
+#     'script'  : (cmd_script,   'run a script of MAVProxy commands'),
+#     'setup'   : (cmd_setup,    'go into setup mode'),
+#     'reset'   : (cmd_reset,    'reopen the connection to the MAVLink master'),
+#     'click'   : (cmd_click,    'set click location'),
+#     'status'  : (cmd_status,   'show status'),
+#     'set'     : (cmd_set,      'mavproxy settings'),
+#     'watch'   : (cmd_watch,    'watch a MAVLink pattern'),
+#     'module'  : (cmd_module,   'module commands'),
+#     'alias'   : (cmd_alias,    'command aliases')
+#     }
 
 
 def process_master(m):

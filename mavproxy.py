@@ -1110,7 +1110,7 @@ if __name__ == '__main__':
     # global mavproxy state
     mpstate = MPState()
     mpstate.status.exit = False
-    mpstate.command_map = command_map
+    #mpstate.command_map = command_map
     mpstate.continue_mode = opts.continue_mode
     # queues for logging
     mpstate.logqueue = Queue.Queue()

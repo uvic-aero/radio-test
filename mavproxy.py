@@ -350,10 +350,10 @@ def get_mav_param(param, default=None):
     '''return a EEPROM parameter value'''
     return mpstate.mav_param.get(param, default)
 
-# def param_set(name, value, retries=3):
-#     '''set a parameter'''
-#     name = name.upper()
-#     return mpstate.mav_param.mavset(mpstate.master(), name, value, retries=retries)
+def param_set(name, value, retries=3):
+    '''set a parameter'''
+    name = name.upper()
+    return mpstate.mav_param.mavset(mpstate.master(), name, value, retries=retries)
 
 # def cmd_script(args):
 #     '''run a script'''

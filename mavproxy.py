@@ -140,43 +140,11 @@ class MPStatus(object):
         self.last_seq = 0
         self.armed = False
 
-    # def show(self, f, pattern=None, verbose=False):
-    #     '''write status to status.txt'''
-    #     if pattern is None:
-    #         f.write('Counters: ')
-    #         for c in self.counters:
-    #             f.write('%s:%s ' % (c, self.counters[c]))
-    #         f.write('\n')
-    #         f.write('MAV Errors: %u\n' % self.mav_error)
-    #         f.write(str(self.gps)+'\n')
-    #     for m in sorted(self.msgs.keys()):
-    #         if pattern is not None and not fnmatch.fnmatch(str(m).upper(), pattern.upper()):
-    #             continue
-    #         if verbose:
-    #             try:
-    #                 mavutil.dump_message_verbose(f, self.msgs[m])
-    #                 f.write("\n")
-    #             except AttributeError as e:
-    #                 if "has no attribute 'dump_message_verbose'" in str(e):
-    #                     print("pymavlink update required for --verbose")
-    #                 else:
-    #                     raise e
-    #         else:
-    #             f.write("%u: %s\n" % (self.msg_count[m], str(self.msgs[m])))
-
-    # def write(self):
-    #     '''write status to status.txt'''
-    #     f = open('status.txt', mode='w')
-    #     self.show(f)
-    #     f.close()
 
 def say_text(text, priority='important'):
     '''text output - default function for say()'''
     mpstate.console.writeln(text)
 
-# def say(text, priority='important'):
-#     '''text and/or speech output'''
-#     mpstate.functions.say(text, priority)
 
 class MAVFunctions(object):
     '''core functions available in modules'''
@@ -289,17 +257,6 @@ class MPState(object):
         self.start_time_s = time.time()
         self.attitude_time_s = 0
 
-    # @property
-    # def mav_param(self):
-    #     '''map mav_param onto the current target system parameters'''
-    #     compid = self.settings.target_component
-    #     if compid == 0:
-    #         compid = 1
-    #     sysid = (self.settings.target_system, compid)
-    #     if not sysid in self.mav_param_by_sysid:
-    #         self.mav_param_by_sysid[sysid] = mavparm.MAVParmDict()
-    #     return self.mav_param_by_sysid[sysid]
-
     def module(self, name):
         '''Find a public module (most modules are private)'''
         if name in self.public_modules:
@@ -321,30 +278,6 @@ class MPState(object):
                 return m
         return self.mav_master[self.settings.link-1]
 
-    # def notify_click(self):
-    #     notify_mods = ['map', 'misseditor']
-    #     for modname in notify_mods:
-    #         mod = self.module(modname)
-    #         if mod is not None:
-    #             mod.click_updated()
-
-    # def click(self, latlng):
-    #     if latlng is None:
-    #         self.click_location = None
-    #         self.click_time = None
-    #         self.notify_click()
-    #         return
-
-    #     (lat, lng) = latlng
-    #     if lat is None:
-    #         print("Bad Lat")
-    #         return
-    #     if lng is None:
-    #         print("Bad lng")
-    #         return
-    #     self.click_location = (lat, lng)
-    #     self.click_time = time.time()
-    #     self.notify_click()
 
 def get_mav_param(param, default=None):
     '''return a EEPROM parameter value'''
@@ -407,20 +340,6 @@ def cmd_watch(args):
         return
     mpstate.status.watch = args
     print("Watching %s" % mpstate.status.watch)
-
-# def generate_kwargs(args):
-#     kwargs = {}
-#     module_components = args.split(":{", 1)
-#     module_name = module_components[0]
-#     if (len(module_components) == 2 and module_components[1].endswith("}")):
-#         # assume json
-#         try:
-#             module_args = "{"+module_components[1]
-#             kwargs = json.loads(module_args)
-#         except ValueError as e:
-#             print('Invalid JSON argument: {0} ({1})'.format(module_args,
-#                                                            repr(e)))
-#     return (module_name, kwargs)
 
 def load_module(modname, quiet=False, **kwargs):
     '''load a module'''
@@ -668,37 +587,6 @@ def process_master(m):
                     mpstate.console.writeln("MAV error: %s" % msg)
                 mpstate.status.mav_error += 1
 
-# def process_mavlink(slave):
-#     '''process packets from MAVLink slaves, forwarding to the master'''
-#     try:
-#         buf = slave.recv()
-#     except socket.error:
-#         return
-#     try:
-#         global mavversion
-#         if slave.first_byte and mavversion is None:
-#             slave.auto_mavlink_version(buf)
-#         msgs = slave.mav.parse_buffer(buf)
-#     except mavutil.mavlink.MAVError as e:
-#         mpstate.console.error("Bad MAVLink slave message from %s: %s" % (slave.address, e.message))
-#         return
-#     if msgs is None:
-#         return
-#     if mpstate.settings.mavfwd and not mpstate.status.setup_mode:
-#         for m in msgs:
-#             mbuf = m.get_msgbuf()
-#             mpstate.master().write(mbuf)
-#             if mpstate.logqueue:
-#                 usec = int(time.time() * 1.0e6)
-#                 mpstate.logqueue.put(bytearray(struct.pack('>Q', usec) + m.get_msgbuf()))
-#             if mpstate.status.watch:
-#                 for msg_type in mpstate.status.watch:
-#                     if fnmatch.fnmatch(m.get_type().upper(), msg_type.upper()):
-#                         mpstate.console.writeln('> '+ str(m))
-#                         break
-#     mpstate.status.counters['Slave'] += 1
-
-
 def mkdir_p(dir):
     '''like mkdir -p'''
     if not dir:
@@ -710,19 +598,6 @@ def mkdir_p(dir):
         return
     mkdir_p(os.path.dirname(dir))
     os.mkdir(dir)
-
-# def log_writer():
-#     '''log writing thread'''
-#     while True:
-#         mpstate.logfile_raw.write(bytearray(mpstate.logqueue_raw.get()))
-#         timeout = time.time() + 10
-#         while not mpstate.logqueue_raw.empty() and time.time() < timeout:
-#             mpstate.logfile_raw.write(mpstate.logqueue_raw.get())
-#         while not mpstate.logqueue.empty() and time.time() < timeout:
-#             mpstate.logfile.write(mpstate.logqueue.get())
-#         if mpstate.settings.flushlogs or time.time() >= timeout:
-#             mpstate.logfile.flush()
-#             mpstate.logfile_raw.flush()
 
 # If state_basedir is NOT set then paths for logs and aircraft
 # directories are relative to mavproxy's cwd
@@ -764,41 +639,6 @@ def log_paths():
     return (logdir,
             os.path.join(logdir, logname),
             os.path.join(logdir, logname + '.raw'))
-
-
-# def open_telemetry_logs(logpath_telem, logpath_telem_raw):
-#     '''open log files'''
-#     if opts.append_log or opts.continue_mode:
-#         mode = 'ab'
-#     else:
-#         mode = 'wb'
-
-#     try:
-#         mpstate.logfile = open(logpath_telem, mode=mode)
-#         mpstate.logfile_raw = open(logpath_telem_raw, mode=mode)
-#         print("Log Directory: %s" % mpstate.status.logdir)
-#         print("Telemetry log: %s" % logpath_telem)
-
-#         #make sure there's enough free disk space for the logfile (>200Mb)
-#         #statvfs doesn't work in Windows
-#         if platform.system() != 'Windows':
-#             stat = os.statvfs(logpath_telem)
-#             if stat.f_bfree*stat.f_bsize < 209715200:
-#                 print("ERROR: Not enough free disk space for logfile")
-#                 mpstate.status.exit = True
-#                 return
-
-#         # use a separate thread for writing to the logfile to prevent
-#         # delays during disk writes (important as delays can be long if camera
-#         # app is running)
-#         #t = threading.Thread(target=log_writer, name='log_writer')
-#         #t.daemon = True
-#         #t.start()
-#     except Exception as e:
-#         print("ERROR: opening log file for writing: %s" % e)
-#         mpstate.status.exit = True
-#         return
-
 
 def set_stream_rates():
     '''set mavlink stream rates'''

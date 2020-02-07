@@ -355,58 +355,58 @@ def param_set(name, value, retries=3):
     name = name.upper()
     return mpstate.mav_param.mavset(mpstate.master(), name, value, retries=retries)
 
-# def cmd_script(args):
-#     '''run a script'''
-#     if len(args) < 1:
-#         print("usage: script <filename>")
-#         return
+def cmd_script(args):
+    '''run a script'''
+    if len(args) < 1:
+        print("usage: script <filename>")
+        return
 
-#     run_script(args[0])
+    run_script(args[0])
 
-# def cmd_set(args):
-#     '''control mavproxy options'''
-#     mpstate.settings.command(args)
+def cmd_set(args):
+    '''control mavproxy options'''
+    mpstate.settings.command(args)
 
-# def cmd_status(args):
-#     '''show status'''
-#     verbose = False
-#     if "--verbose" in args:
-#         verbose = True
-#         args = list(filter(lambda x : x != "--verbose", args))
-#     if len(args) == 0:
-#         mpstate.status.show(sys.stdout, pattern=None, verbose=verbose)
-#     else:
-#         for pattern in args:
-#             mpstate.status.show(sys.stdout, pattern=pattern, verbose=verbose)
+def cmd_status(args):
+    '''show status'''
+    verbose = False
+    if "--verbose" in args:
+        verbose = True
+        args = list(filter(lambda x : x != "--verbose", args))
+    if len(args) == 0:
+        mpstate.status.show(sys.stdout, pattern=None, verbose=verbose)
+    else:
+        for pattern in args:
+            mpstate.status.show(sys.stdout, pattern=pattern, verbose=verbose)
 
-# def cmd_setup(args):
-#     mpstate.status.setup_mode = True
-#     mpstate.rl.set_prompt("")
+def cmd_setup(args):
+    mpstate.status.setup_mode = True
+    mpstate.rl.set_prompt("")
 
 
-# def cmd_reset(args):
-#     print("Resetting master")
-#     mpstate.master().reset()
+def cmd_reset(args):
+    print("Resetting master")
+    mpstate.master().reset()
 
-# def cmd_click(args):
-#     '''synthesise click at lat/lon; no arguments is "unclick"'''
-#     if len(args) == 0:
-#         mpstate.click(None)
-#         return
-#     if len(args) < 2:
-#         print("click LAT_EXPRESSION LNG_EXPRESSION")
-#         return
-#     lat = mavutil.evaluate_expression(args[0], mpstate.master().messages)
-#     lng = mavutil.evaluate_expression(args[1], mpstate.master().messages)
-#     mpstate.click((lat, lng))
+def cmd_click(args):
+    '''synthesise click at lat/lon; no arguments is "unclick"'''
+    if len(args) == 0:
+        mpstate.click(None)
+        return
+    if len(args) < 2:
+        print("click LAT_EXPRESSION LNG_EXPRESSION")
+        return
+    lat = mavutil.evaluate_expression(args[0], mpstate.master().messages)
+    lng = mavutil.evaluate_expression(args[1], mpstate.master().messages)
+    mpstate.click((lat, lng))
 
-# def cmd_watch(args):
-#     '''watch a mavlink packet pattern'''
-#     if len(args) == 0:
-#         mpstate.status.watch = None
-#         return
-#     mpstate.status.watch = args
-#     print("Watching %s" % mpstate.status.watch)
+def cmd_watch(args):
+    '''watch a mavlink packet pattern'''
+    if len(args) == 0:
+        mpstate.status.watch = None
+        return
+    mpstate.status.watch = args
+    print("Watching %s" % mpstate.status.watch)
 
 # def generate_kwargs(args):
 #     kwargs = {}
@@ -479,93 +479,93 @@ def unload_module(modname):
     print("Unable to find module %s" % modname)
     return False
 
-# def cmd_module(args):
-#     '''module commands'''
-#     usage = "usage: module <list|load|reload|unload>"
-#     if len(args) < 1:
-#         print(usage)
-#         return
-#     if args[0] == "list":
-#         mods = []
-#         for (m,pm) in mpstate.modules:
-#             mods.append(m)
-#         mods = sorted(mods, key=lambda m : m.name)
-#         for m in mods:
-#             print("%s: %s" % (m.name, m.description))
-#     elif args[0] == "load":
-#         if len(args) < 2:
-#             print("usage: module load <name>")
-#             return
-#         (modname, kwargs) = generate_kwargs(args[1])
-#         try:
-#             load_module(modname, **kwargs)
-#         except TypeError as ex:
-#             print(ex)
-#             print("%s module does not support keyword arguments"% modname)
-#             return
-#     elif args[0] == "reload":
-#         if len(args) < 2:
-#             print("usage: module reload <name>")
-#             return
-#         (modname, kwargs) = generate_kwargs(args[1])
-#         pmodule = None
-#         for (m,pm) in mpstate.modules:
-#             if m.name == modname:
-#                 pmodule = pm
-#         if pmodule is None:
-#             print("Module %s not loaded" % modname)
-#             return
-#         if unload_module(modname):
-#             import zipimport
-#             try:
-#                 reload(pmodule)
-#             except ImportError:
-#                 clear_zipimport_cache()
-#                 reload(pmodule)
-#             try:
-#                 if load_module(modname, quiet=True, **kwargs):
-#                     print("Reloaded module %s" % modname)
-#             except TypeError:
-#                 print("%s module does not support keyword arguments" % modname)
-#     elif args[0] == "unload":
-#         if len(args) < 2:
-#             print("usage: module unload <name>")
-#             return
-#         modname = os.path.basename(args[1])
-#         unload_module(modname)
-#     else:
-#         print(usage)
+def cmd_module(args):
+    '''module commands'''
+    usage = "usage: module <list|load|reload|unload>"
+    if len(args) < 1:
+        print(usage)
+        return
+    if args[0] == "list":
+        mods = []
+        for (m,pm) in mpstate.modules:
+            mods.append(m)
+        mods = sorted(mods, key=lambda m : m.name)
+        for m in mods:
+            print("%s: %s" % (m.name, m.description))
+    elif args[0] == "load":
+        if len(args) < 2:
+            print("usage: module load <name>")
+            return
+        (modname, kwargs) = generate_kwargs(args[1])
+        try:
+            load_module(modname, **kwargs)
+        except TypeError as ex:
+            print(ex)
+            print("%s module does not support keyword arguments"% modname)
+            return
+    elif args[0] == "reload":
+        if len(args) < 2:
+            print("usage: module reload <name>")
+            return
+        (modname, kwargs) = generate_kwargs(args[1])
+        pmodule = None
+        for (m,pm) in mpstate.modules:
+            if m.name == modname:
+                pmodule = pm
+        if pmodule is None:
+            print("Module %s not loaded" % modname)
+            return
+        if unload_module(modname):
+            import zipimport
+            try:
+                reload(pmodule)
+            except ImportError:
+                clear_zipimport_cache()
+                reload(pmodule)
+            try:
+                if load_module(modname, quiet=True, **kwargs):
+                    print("Reloaded module %s" % modname)
+            except TypeError:
+                print("%s module does not support keyword arguments" % modname)
+    elif args[0] == "unload":
+        if len(args) < 2:
+            print("usage: module unload <name>")
+            return
+        modname = os.path.basename(args[1])
+        unload_module(modname)
+    else:
+        print(usage)
 
 
-# def cmd_alias(args):
-#     '''alias commands'''
-#     usage = "usage: alias <add|remove|list>"
-#     if len(args) < 1 or args[0] == "list":
-#         if len(args) >= 2:
-#             wildcard = args[1].upper()
-#         else:
-#             wildcard = '*'
-#         for a in sorted(mpstate.aliases.keys()):
-#             if fnmatch.fnmatch(a.upper(), wildcard):
-#                 print("%-15s : %s" % (a, mpstate.aliases[a]))
-#     elif args[0] == "add":
-#         if len(args) < 3:
-#             print(usage)
-#             return
-#         a = args[1]
-#         mpstate.aliases[a] = ' '.join(args[2:])
-#     elif args[0] == "remove":
-#         if len(args) != 2:
-#             print(usage)
-#             return
-#         a = args[1]
-#         if a in mpstate.aliases:
-#             mpstate.aliases.pop(a)
-#         else:
-#             print("no alias %s" % a)
-#     else:
-#         print(usage)
-#         return
+def cmd_alias(args):
+    '''alias commands'''
+    usage = "usage: alias <add|remove|list>"
+    if len(args) < 1 or args[0] == "list":
+        if len(args) >= 2:
+            wildcard = args[1].upper()
+        else:
+            wildcard = '*'
+        for a in sorted(mpstate.aliases.keys()):
+            if fnmatch.fnmatch(a.upper(), wildcard):
+                print("%-15s : %s" % (a, mpstate.aliases[a]))
+    elif args[0] == "add":
+        if len(args) < 3:
+            print(usage)
+            return
+        a = args[1]
+        mpstate.aliases[a] = ' '.join(args[2:])
+    elif args[0] == "remove":
+        if len(args) != 2:
+            print(usage)
+            return
+        a = args[1]
+        if a in mpstate.aliases:
+            mpstate.aliases.pop(a)
+        else:
+            print("no alias %s" % a)
+    else:
+        print(usage)
+        return
 
 
 def clear_zipimport_cache():
@@ -599,17 +599,17 @@ def import_package(name):
     return mod
 
 
-# command_map = {
-#     'script'  : (cmd_script,   'run a script of MAVProxy commands'),
-#     'setup'   : (cmd_setup,    'go into setup mode'),
-#     'reset'   : (cmd_reset,    'reopen the connection to the MAVLink master'),
-#     'click'   : (cmd_click,    'set click location'),
-#     'status'  : (cmd_status,   'show status'),
-#     'set'     : (cmd_set,      'mavproxy settings'),
-#     'watch'   : (cmd_watch,    'watch a MAVLink pattern'),
-#     'module'  : (cmd_module,   'module commands'),
-#     'alias'   : (cmd_alias,    'command aliases')
-#     }
+command_map = {
+    'script'  : (cmd_script,   'run a script of MAVProxy commands'),
+    'setup'   : (cmd_setup,    'go into setup mode'),
+    'reset'   : (cmd_reset,    'reopen the connection to the MAVLink master'),
+    'click'   : (cmd_click,    'set click location'),
+    'status'  : (cmd_status,   'show status'),
+    'set'     : (cmd_set,      'mavproxy settings'),
+    'watch'   : (cmd_watch,    'watch a MAVLink pattern'),
+    'module'  : (cmd_module,   'module commands'),
+    'alias'   : (cmd_alias,    'command aliases')
+    }
 
 
 def process_master(m):
@@ -1110,7 +1110,7 @@ if __name__ == '__main__':
     # global mavproxy state
     mpstate = MPState()
     mpstate.status.exit = False
-    #mpstate.command_map = command_map
+    mpstate.command_map = command_map
     mpstate.continue_mode = opts.continue_mode
     # queues for logging
     mpstate.logqueue = Queue.Queue()

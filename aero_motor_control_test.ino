@@ -15,7 +15,7 @@
 #define MOTOR_A_CW	9
 #define	PWM_A		10
 
-#define	MOTOR_B_CCW	0
+#define	MOTOR_B	0
 #define MOTOR_B_CCW	6
 #define MOTOR_B_CW	4
 #define	PWM_B		5

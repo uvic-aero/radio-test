@@ -69,16 +69,36 @@ void setup()
 
 void loop() 
 {
-  interruptCheck()
+  //interruptCheck()
   //calculates desired encoder time interval based on desired speed in cm/s
-  speedCalc();
-  Serial.println(actualTimeA);
+  //speedCalc();
+  //Serial.println(actualTimeA);
   //sets motor speed and directions
-  motorA(dirA, motorValueA);
-  motorB(dirB, motorValueB);
+  //motorA(dirA, motorValueA);
+  //motorB(dirB, motorValueB);
+  turn();
+  delay(1000);
 }
 
 //--------------------------
+
+//turns the robot 180 degrees
+void turn()
+{
+  noInterrupts();
+  for (int i = 0; i < 100; i++) {
+    digitalWrite(MOTOR_A_CCW, true);
+    digitalWrite(MOTOR_A_CW, false);
+    analogWrite(PWM_A, 255);
+    digitalWrite(MOTOR_B_CCW, false);
+    digitalWrite(MOTOR_B_CW, true);
+    analogWrite(PWM_B, 255);
+    delay(1);
+  }
+  analogWrite(PWM_A, 0);
+  analogWrite(PWM_B, 0);
+  interrupts();
+}
 
 //calls micros() when interrupt is triggered, keeps previous micros() value for calculating time interval of encoder
 void EncoderA() 
@@ -111,7 +131,7 @@ void motorB(bool dirB, int motorValueB)
 }
 
 //takes desired speed in cm/s and converts to encoder time interval
-void speedCalc(float givenSpeedA, givenSpeedB)
+void speedCalc(float givenSpeedA, float givenSpeedB)
 {
 	givenTimeA = 23.562 / (givenSpeedA / 60);
 	givenTimeB = 23.562 / (givenSpeedB / 60);

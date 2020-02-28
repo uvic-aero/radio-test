@@ -2,7 +2,7 @@
 
 const byte numChars = 64;
 char receivedChars[numChars];
-int id, spin, dir1, vel1, dir2, vel2;
+int id, spin, brake, dir1, vel1, dir2, vel2;
 boolean newData = false;
 
 byte ledPin = 13;   // the onboard LED
@@ -34,6 +34,7 @@ void loop() {
       char* token = strtok(receivedChars, " ");
       id = atoi(token);
       spin = atoi(strtok(0, " "));
+      brake = atoi(strtok(0, " "));
       dir1 = atoi(strtok(0, " "));
       vel1 = atoi(strtok(0, " "));
       dir2 = atoi(strtok(0, " "));
@@ -83,10 +84,20 @@ void rxMessage() {
 
 void returnMessage() {
     if (newData == true) {
-        Serial.print("<Ack message id: ");
+        Serial.print("<");
         Serial.print(id);
-        Serial.print("   ");
-        Serial.print(millis());
+        Serial.print(" ");
+        Serial.print(spin);
+        Serial.print(" ");
+        Serial.print(brake);
+        Serial.print(" ");
+        Serial.print(dir1);
+        Serial.print(" ");
+        Serial.print(vel1);
+        Serial.print(" ");
+        Serial.print(dir2);
+        Serial.print(" ");
+        Serial.print(vel2);
         Serial.print('>');
             // change the state of the LED everytime a reply is sent
         digitalWrite(ledPin, ! digitalRead(ledPin));

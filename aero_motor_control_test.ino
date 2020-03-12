@@ -1,36 +1,45 @@
-
 //(pi*radius[cm])/(600*velocity[cm/s])
+
+//wire setup for encoders
 //5V to blue
 //GND to green
 
+//motor 1 = A in code     motor 2 = B in code
+
+//pwm motor value|encoder time interval
+//            250|350
+//            200|370
+//            150|410
+//            100|500
+//             50|950
+
 //--------------------
 //TODO:
-//Add 180 deg turn function
 //Improve readability and variable/function names
 //--------------------
 
 //pin setup for motors
-#define MOTOR_A		1
-#define MOTOR_A_CCW	8
-#define MOTOR_A_CW	9
-#define	PWM_A		10
+#define MOTOR_A    1
+#define MOTOR_A_CCW 6
+#define MOTOR_A_CW  4
+#define PWM_A   5
 
-#define	MOTOR_B	0
-#define MOTOR_B_CCW	6
-#define MOTOR_B_CW	4
-#define	PWM_B		5
+#define MOTOR_B 0
+#define MOTOR_B_CCW 8
+#define MOTOR_B_CW  9
+#define PWM_B   10
 
-//motor speed 0-1023
+//motor speed 0-255
 int motorValueA = 0;
 int motorValueB = 0;
 
 //desired speed in cm/s
-float givenSpeedA = 1;
-float givenSpeedB = 0;
+//float givenSpeedA = 5;
+//float givenSpeedB = 0;
 
 //desired time interval for encoders
-unsigned long givenTimeA = 0;
-unsigned long givenTimeB = 0;
+int givenTimeA = 800;
+int givenTimeB = 400;
 
 //desired direction
 bool dirA = false;
@@ -46,46 +55,174 @@ unsigned long timeBcur = 0;
 unsigned long timeApre = 0;
 unsigned long timeBpre = 0;
 //actual time interval for encoders
-unsigned long actualTimeA = 0;
-unsigned long actualTimeB = 0;
+unsigned long actualTimeA = 1000;
+unsigned long actualTimeB = 1000;
 
-void setup() 
+void setup()
 {
   pinMode(MOTOR_A_CCW, OUTPUT);
   pinMode(MOTOR_A_CW, OUTPUT);
   pinMode(PWM_A, OUTPUT);
-  
+
   pinMode(MOTOR_B_CCW, OUTPUT);
   pinMode(MOTOR_B_CW, OUTPUT);
   pinMode(PWM_B, OUTPUT);
-  
+
   pinMode(2, INPUT);
   pinMode(3, INPUT);
-  
+
   Serial.begin(9600);
   attachInterrupt(digitalPinToInterrupt(3), EncoderA, RISING);
   attachInterrupt(digitalPinToInterrupt(2), EncoderB, RISING);
 }
 
-void loop() 
+void loop()
 {
-  //interruptCheck()
+
+  //the arduino has a 64 byte serial buffer so dont send more bytes than that before processing them or else bytes will be lost, sometimes it may need to be flushed/emptied this can be done as follows
+  /*
+    while (Serial.available())
+    Serial.read();
+  */
+
+  //original code for revceiving serial bytes from a python program
+  //received bytes were a single string eg "R F2 B' U' F U D' R2 D' F' B2 U' R2 U R2 U' B2 R2 U'"
+  //this got divided at each space into an array of strings, each entry was a motor command where the letter denoted which motor to rotate, the number denoted how many times to rotate and the apostrophe denoted opposite rotation
+  //eg "F2" rotated the front motor 90 degrees cw 2 times, "U" rotated the up motor 90 degrees cw 1 time, "D'" rotated the down motor 90 degrees ccw
+  /*
+    char cubei;
+    String cubef[19];
+    int a = 0;
+    //only enters when some serial value is received
+    while (Serial.available()) {
+    //temporarily save the current byte received
+    cubei = Serial.read();
+    //if the byte is alphanumeric save the byte to the current array index
+    if (isAlphaNumeric(cubei)) {
+      cubef[a] += cubei;
+    }
+    //if the byte is a space move 1 index forward
+    else if (isSpace(cubei)) {
+      a++;
+    }
+    //if the byte was anything else ie \0 null terminator exit the while loop
+    else {
+      break;
+    }
+    }
+  */
+
+  //changes the desired time interval of encoders to a new user inputed value
+  //not robust at all for now, only use numbers or else it might break
+  //give a number within ~300 (max speed) to ~1000 (min speed)
+  //conditions for start/end characters can be added just vaguely keep these 3 lines and will it should work
+  String temp = "";
+  while (Serial.available()) {
+    //pretty sure this just appends the next value to the string, idk if its good practise or not
+    temp += Serial.read();
+  }
+  givenTimeA = temp.toInt();
+  givenTimeB = temp.toInt();
+
+  //calculates the new time interval of encoders
+  interruptCheck();
   //calculates desired encoder time interval based on desired speed in cm/s
-  //speedCalc();
-  //Serial.println(actualTimeA);
+  speedCalc();
   //sets motor speed and directions
-  //motorA(dirA, motorValueA);
-  //motorB(dirB, motorValueB);
-  turn();
-  delay(1000);
+  motorA(dirA, motorValueA);
+  motorB(dirB, motorValueB);
 }
 
 //--------------------------
 
+//calls micros() when interrupt is triggered, keeps previous micros() value for calculating time interval of encoder
+void EncoderA()
+{
+  timeApre = timeAcur;
+  timeAcur = micros();
+  encoderStateA = true;
+}
+void EncoderB()
+{
+  timeBpre = timeBcur;
+  timeBcur = micros();
+  encoderStateB = true;
+}
+
+//sets motor speed and direction, direction is single bool, motor speed is scaled from digital input to analog output (0-1023 -> 0-255)
+void motorA(bool dirA, int motorValueA)
+{
+  digitalWrite(MOTOR_A_CCW, dirA);
+  digitalWrite(MOTOR_A_CW, !dirA);
+  //motorValueA = map(motorValueA, 0, 1023, 0, 255);
+  analogWrite(PWM_A, motorValueA);
+}
+void motorB(bool dirB, int motorValueB)
+{
+  digitalWrite(MOTOR_B_CCW, dirB);
+  digitalWrite(MOTOR_B_CW, !dirB);
+  //motorValueB = map(motorValueB, 0, 1023, 0, 255);
+  analogWrite(PWM_B, motorValueB);
+}
+
+//takes desired speed in cm/s and converts to encoder time interval
+void speedCalc()
+{
+  //givenTimeA = 23.562 / (givenSpeedA / 60);
+  //givenTimeB = 23.562 / (givenSpeedB / 60);
+  //if the desired encoder time interval is more than the actual encoder time interval increases motor speed by 10, and vice versa
+  if (givenTimeA > actualTimeA)
+  {
+    if (motorValueA > 0)
+      motorValueA = motorValueA - 1;
+  }
+  else
+  {
+    if (motorValueA < 255)
+      motorValueA = motorValueA + 1;
+  }
+  if (givenTimeB > actualTimeB)
+  {
+    if (motorValueB > 0)
+      motorValueB = motorValueB - 1;
+  }
+  else
+  {
+    if (motorValueB < 255)
+      motorValueB = motorValueB + 1;
+  }
+}
+
+void interruptCheck()
+{
+  //checks if interrupt has been triggered
+  if (encoderStateA)
+  {
+    actualTimeA = timeAcur - timeApre;
+    encoderStateA = false;
+  }
+  if (encoderStateB)
+  {
+    actualTimeB = timeBcur - timeBpre;
+    encoderStateB = false;
+  }
+}
+
+void brake(int length)
+{
+  digitalWrite(MOTOR_A_CCW, HIGH);
+  digitalWrite(MOTOR_A_CW, HIGH);
+  digitalWrite(PWM_A, HIGH);
+
+  digitalWrite(MOTOR_B_CCW, HIGH);
+  digitalWrite(MOTOR_B_CW, HIGH);
+  digitalWrite(PWM_B, HIGH);
+  delay(length);
+}
+
 //turns the robot 180 degrees
 void turn()
 {
-  noInterrupts();
   for (int i = 0; i < 100; i++) {
     digitalWrite(MOTOR_A_CCW, true);
     digitalWrite(MOTOR_A_CW, false);
@@ -97,95 +234,4 @@ void turn()
   }
   analogWrite(PWM_A, 0);
   analogWrite(PWM_B, 0);
-  interrupts();
-}
-
-//calls micros() when interrupt is triggered, keeps previous micros() value for calculating time interval of encoder
-void EncoderA() 
-{
-  timeApre = timeAcur;
-  timeAcur = micros();
-  encoderStateA = true;
-}
-void EncoderB() 
-{
-  timeBpre = timeBcur;
-  timeBcur = micros();
-  encoderStateB = true;
-}
-
-//sets motor speed and direction, direction is single bool, motor speed is scaled from digital input to analog output (0-1023 -> 0-255)
-void motorA(bool dirA, int motorValueA) 
-{
-  digitalWrite(MOTOR_A_CCW, dirA);
-  digitalWrite(MOTOR_A_CW, !dirA);
-  motorValueA = map(motorValueA, 0, 1023, 0, 255);
-  analogWrite(PWM_A, motorValueA);
-}
-void motorB(bool dirB, int motorValueB) 
-{
-  digitalWrite(MOTOR_B_CCW, dirB);
-  digitalWrite(MOTOR_B_CW, !dirB);
-  motorValueB = map(motorValueB, 0, 1023, 0, 255);
-  analogWrite(PWM_B, motorValueB);
-}
-
-//takes desired speed in cm/s and converts to encoder time interval
-void speedCalc(float givenSpeedA, float givenSpeedB)
-{
-	givenTimeA = 23.562 / (givenSpeedA / 60);
-	givenTimeB = 23.562 / (givenSpeedB / 60);
-  //if the desired encoder time interval is more than the actual encoder time interval increases motor speed by 10, and vice versa
-  if (givenTimeA > actualTimeA) 
-  {
-    motorValueA += 1;
-  }
-  else if (givenTimeA < actualTimeA) 
-  {
-    if (motorValueA != 0) 
-	{
-      motorValueA -= 1;
-    }
-  }
-  if (givenTimeB > actualTimeB) 
-  {
-    motorValueB += 1;
-  }
-  
-  else if (givenTimeB < actualTimeB) 
-  {
-    if (motorValueB != 0) {
-      motorValueB -= 1;
-    }
-  }
-}
-
-void brake(int length)
-{
-	noInterrupts();
-	digitalWrite(MOTOR_A_CCW, HIGH);
-	digitalWrite(MOTOR_A_CW, HIGH);
-	digitalWrite(PWM_A, HIGH);
-	
-	digitalWrite(MOTOR_B_CCW, HIGH);
-	digitalWrite(MOTOR_B_CW, HIGH);
-	digitalWrite(PWM_B, HIGH);
-	delay(length);
-	
-	interrupts();
-}
-
-void interruptCheck()
-{
-	//checks if interrupt has been triggered
-	if (encoderStateA) 
-	{
-		actualTimeA = timeAcur - timeApre;
-		encoderStateA = false;
-	}
-	if (encoderStateB) 
-	{
-		actualTimeB = timeBcur - timeBpre;
-		encoderStateB = false;
-	}
 }

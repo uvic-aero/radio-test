@@ -18,6 +18,14 @@
 //Improve readability and variable/function names
 //--------------------
 
+//values for error calc
+float errorA; 
+float errorB; 
+float K_pA;
+float K_pB;
+float P_outputA; 
+float P_outputB; 
+
 //pin setup for motors
 #define MOTOR_A    1
 #define MOTOR_A_CCW 6
@@ -168,29 +176,35 @@ void motorB(bool dirB, int motorValueB)
 //takes desired speed in cm/s and converts to encoder time interval
 void speedCalc()
 {
-  //givenTimeA = 23.562 / (givenSpeedA / 60);
-  //givenTimeB = 23.562 / (givenSpeedB / 60);
-  //if the desired encoder time interval is more than the actual encoder time interval increases motor speed by 10, and vice versa
-  if (givenTimeA > actualTimeA)
-  {
-    if (motorValueA > 0)
-      motorValueA = motorValueA - 1;
-  }
-  else
-  {
-    if (motorValueA < 255)
-      motorValueA = motorValueA + 1;
-  }
-  if (givenTimeB > actualTimeB)
-  {
-    if (motorValueB > 0)
-      motorValueB = motorValueB - 1;
-  }
-  else
-  {
-    if (motorValueB < 255)
-      motorValueB = motorValueB + 1;
-  }
+	//convert givenSpeedA and givenSpeedB to encoder time intervals
+	givenTimeA = 106.68 / (givenSpeedA / 60);
+	givenTimeB = 106.68 / (givenSpeedB / 60);
+	
+	//calculate error between desired and actual time
+	errorA = givenTimeA - actualTimeA;
+	errorB = givenTimeB - actualTimeB;
+	
+	//multiply error by proportional coefficient K_p
+	P_outputA = K_pA * errorA;
+	P_outputB = K_pB * errorB;
+	
+	if(P_outputA >= 0)
+	{
+	givenTimeA = givenTimeA + P_outputA; 
+	}
+	else
+	{
+	givenTimeA = givenTimeA - P_outputA;
+	}
+	
+	if(P_outputB >= 0)
+	{
+	givenTimeB = givenTimeB + P_outputB;
+	}
+	else
+	{
+	givenTimeB = givenTimeB - P_outputB;
+	}
 }
 
 void interruptCheck()

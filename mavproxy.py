@@ -854,6 +854,8 @@ def set_mav_version(mav10, mav20, autoProtocol, mavversionArg):
 
 if __name__ == '__main__':
     from optparse import OptionParser
+    
+    # Parsing subject to refactor
     parser = OptionParser("mavproxy.py [options]")
 
     parser.add_option("--master", dest="master", action='append',
@@ -1057,6 +1059,8 @@ if __name__ == '__main__':
         for m in standard_modules:
             load_module(m, quiet=True)
 
+    # Script starting subject to refactor
+
     start_scripts = []
     if 'HOME' in os.environ and not opts.setup:
         start_script = os.path.join(os.environ['HOME'], ".mavinit.scr")
@@ -1091,6 +1095,8 @@ if __name__ == '__main__':
     mpstate.status.thread = threading.Thread(target=main_loop, name='main_loop')
     mpstate.status.thread.daemon = True
     mpstate.status.thread.start()
+
+    # Refactor candidate, should be able to remove keyboard interrupt
 
     # use main program for input. This ensures the terminal cleans
     # up on exit

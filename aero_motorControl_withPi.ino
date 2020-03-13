@@ -345,7 +345,7 @@ void interruptCheck()
   }
 }
 
-void brake(int length)
+void brakeUntil(int length)
 {
   digitalWrite(MOTOR_A_CCW, HIGH);
   digitalWrite(MOTOR_A_CW, HIGH);
